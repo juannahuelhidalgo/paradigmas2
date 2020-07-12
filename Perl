@@ -1,4 +1,8 @@
 #!C:\Perl64\bin\perl.exe
+
+#por ahora solo descarga los archivos del servidor y los descomprime
+#queda lograr automatizarlo
+
 use strict;
 use warnings;
 use strict;
