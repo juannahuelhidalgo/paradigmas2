@@ -5,26 +5,49 @@ use strict;
 use LWP::Simple;
 use open qw( :encoding(UTF-8) :std ); # Make UTF-8 default encoding
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
-use IO::Uncompress::Unzip qw($UnzipError);
-use IO::File;
+
 
 my $urldiaria = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre';
 my $archivodiario = 'diaria' . '.zip';
 getstore( $urldiaria, $archivodiario );
-my $u = IO::Uncompress::Unzip->new($archivodiario);
+my $zip = Archive::Zip->new($archivodiario);
+my $destinationDirectory = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt';
+foreach my $member ($zip-> members)
+{
+    next if $member->isDirectory;
+    (my $extractName = $member->fileName) =~ s{.*/}{};
+    $member->extractToFileNamed(
+      "$destinationDirectory/$extractName");
+}
 
 my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
 my $cincodias = '5d' . '.zip';
 getstore( $url5dias, $cincodias );
-
+my $zip2 = Archive::Zip->new($cincodias);
+foreach my $member ($zip2-> members)
+{
+    next if $member->isDirectory;
+    (my $extractName = $member->fileName) =~ s{.*/}{};
+    $member->extractToFileNamed(
+      "$destinationDirectory/$extractName");
+}
 
       
 my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
 my $historial = 'hist' . '.zip';
 getstore( $urldatosmet, $historial );
+my $zip3 = Archive::Zip->new($historial);
+foreach my $member ($zip3-> members)
+{
+    next if $member->isDirectory;
+    (my $extractName = $member->fileName) =~ s{.*/}{};
+    $member->extractToFileNamed(
+      "$destinationDirectory/$extractName");
+}
 
 #extraido de:
-#http://perlenespanol.com/foro/automatizar-una-descarga-de-lotes-de-archivos-t9311.html
+#http://perlenespanol.com/foro/automatizar-una-descarga-de-lotes-de-archivos-t9311.$zip
+#https://www.perlmonks.org/?node_id=104026
 
 #https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre aqui deberiamos poder descargar de manera diaria el clima
 #https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d 5 dias
