@@ -1,0 +1,31 @@
+#!C:\Perl64\bin\perl.exe
+use strict;
+use warnings;
+use strict;
+use LWP::Simple;
+use open qw( :encoding(UTF-8) :std ); # Make UTF-8 default encoding
+use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
+use IO::Uncompress::Unzip qw($UnzipError);
+use IO::File;
+
+my $urldiaria = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre';
+my $archivodiario = 'diaria' . '.zip';
+getstore( $urldiaria, $archivodiario );
+my $u = IO::Uncompress::Unzip->new($archivodiario);
+
+my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
+my $cincodias = '5d' . '.zip';
+getstore( $url5dias, $cincodias );
+
+
+      
+my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
+my $historial = 'hist' . '.zip';
+getstore( $urldatosmet, $historial );
+
+#extraido de:
+#http://perlenespanol.com/foro/automatizar-una-descarga-de-lotes-de-archivos-t9311.html
+
+#https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre aqui deberiamos poder descargar de manera diaria el clima
+#https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d 5 dias
+#https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario datos meteorologicos
