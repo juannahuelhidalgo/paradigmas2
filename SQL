@@ -1,0 +1,11 @@
+CREATE DATABASE IF  NOT EXISTS cincodias;
+USE cincodias;
+CREATE TABLE IF NOT EXISTS cincodias ( id INT PRIMARY KEY, nombre VARCHAR(30), fecha DATE, hora TIME, temp float, vientoDir int, velViento int, lluvia float);
+
+CREATE DATABASE IF  NOT EXISTS historial;
+USE historial;
+CREATE TABLE IF NOT EXISTS cincodias ( id INT PRIMARY KEY);
+
+CREATE DATABASE IF  NOT EXISTS diario;
+USE diario;
+CREATE TABLE IF NOT EXISTS diario ( id INT PRIMARY KEY, nombre VARCHAR(30), fecha DATE, hora TIME, tiempo varchar(20), visibilidad int, n1 float, n2 float, direccion varchar (10), n3 float);
