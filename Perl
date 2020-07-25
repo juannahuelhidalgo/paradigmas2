@@ -1,22 +1,38 @@
 #!C:\Perl64\bin\perl.exe
 
-#Por ahora solo descarga los archivos del servidor y los descomprime
+#Por ahora solo descarga los archivos del servidor y los descomprime sobreescribiendo lo que saca
 #Queda lograr automatizarlo
-#Se logra abrir el archivo e imprimirlo en pantalla
 #Falta clasificarlo
 #Hay que conectarlo a la bbdd
 
+#!C:\Perl64\bin\perl.exe
 use strict;
 use warnings;
 use strict;
 use LWP::Simple;
-use open qw( :encoding(UTF-8) :std ); # Make UTF-8 default encoding
+use open qw( :encoding(latin1) :std ); # Make UTF-8 default encoding
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 
+#conocemos e imprimimos el dia corriente en cuestion
+#esto servira para crear y eliminar los backup solicitados (con su respectivo nombre)
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+$year += 1900;
+$mon++;
+print "$mday/$mon/$year $hour:$min:$sec\n";
 
+
+#aqui se busca el nombre del archivo viejo si existiera
+my $rootdir = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\infodiariac.txt';
+unlink ($rootdir);
+
+
+#aqui se almacena el archivo (no es necesario eliminar el viejo porque se sobreescribe)
 my $urldiaria = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre';
 my $archivodiario = 'diaria' . '.zip';
 getstore( $urldiaria, $archivodiario );
+
+
+#se extrae el archivo
 my $zip = Archive::Zip->new($archivodiario);
 my $destinationDirectory = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt';
 foreach my $member ($zip-> members)
@@ -24,51 +40,36 @@ foreach my $member ($zip-> members)
     next if $member->isDirectory;
     (my $extractName = $member->fileName) =~ s{.*/}{};
     $member->extractToFileNamed(
-      "$destinationDirectory/$extractName");
+      "$destinationDirectory/infodiaria.txt");   
 }
+
 
 my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
 my $cincodias = '5d' . '.zip';
 getstore( $url5dias, $cincodias );
+#aqui se almacena el archivo
 my $zip2 = Archive::Zip->new($cincodias);
 foreach my $member ($zip2-> members)
 {
     next if $member->isDirectory;
     (my $extractName = $member->fileName) =~ s{.*/}{};
     $member->extractToFileNamed(
-      "$destinationDirectory/$extractName");
+      "$destinationDirectory/cincodias.txt");
 }
+#se extrae el archivo
 
       
 my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
 my $historial = 'hist' . '.zip';
 getstore( $urldatosmet, $historial );
+#aqui se almacena el archivo
 my $zip3 = Archive::Zip->new($historial);
 foreach my $member ($zip3-> members)
 {
     next if $member->isDirectory;
     (my $extractName = $member->fileName) =~ s{.*/}{};
     $member->extractToFileNamed(
-      "$destinationDirectory/$extractName");
+      "$destinationDirectory/historial.txt");
 }
-
-
-my $file_path = "datohorario20200711.txt";
-open(my $file_handle, '<', $file_path) or die "Could not open file! $!";
-
-while(my $row = <$file_handle>) {
-  chomp $row;
-  print "$row\n";
-}
-
-close $file_handle 
-      or warn "Close failed!";
-  
-#extraido de:
-#http://perlenespanol.com/foro/automatizar-una-descarga-de-lotes-de-archivos-t9311.$zip
-#https://www.perlmonks.org/?node_id=104026
-
-#https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre aqui deberiamos poder descargar de manera diaria el clima
-#https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d 5 dias
-#https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario datos meteorologicos
+#se extrae el archivo
 
