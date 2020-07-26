@@ -1,17 +1,19 @@
 #!C:\Perl64\bin\perl.exe
 
-#Por ahora solo descarga los archivos del servidor y los descomprime sobreescribiendo lo que saca
+#Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
+#Tambien se conecta a la bbdd (local)
 #Queda lograr automatizarlo
 #Falta clasificarlo
-#Hay que conectarlo a la bbdd
 
-#!C:\Perl64\bin\perl.exe
+
 use strict;
 use warnings;
 use strict;
 use LWP::Simple;
 use open qw( :encoding(latin1) :std ); # Make UTF-8 default encoding
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
+use DBI;
+
 
 #conocemos e imprimimos el dia corriente en cuestion
 #esto servira para crear y eliminar los backup solicitados (con su respectivo nombre)
@@ -73,3 +75,37 @@ foreach my $member ($zip3-> members)
 }
 #se extrae el archivo
 
+
+#generamos nuestra base de datos con sus puertos, usuario, pw y nombre
+ my $dbname1 = 'cincodias';
+ my $dbname2 = 'historial';
+ my $dbname3 = 'diario';
+ my $dbhost = '127.0.0.1';
+ my $dbuser = 'root';
+ my $dbpwd = '';
+ 
+#nos conectamos y la preparamos para agregar los datos
+my $dbh1 = DBI->connect("DBI:mysql:database=$dbname1;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+my $sth1 = $dbh1->prepare(
+         "INSERT INTO `cincodias`(`id`, `nombre`)
+         VALUES (?,?)"
+         );
+my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+my $dbh3 = DBI->connect("DBI:mysql:database=$dbname3;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+
+#el siguiente comando introduce el valor a la bbdd en el orden de preparado
+#$sth1->execute( 1, "hola");
+
+
+  #Desconectar la base de datos
+  if (! $dbh1->disconnect) {
+     warn "Error al desconectarse de la base de datos: $DBI::errstr";
+  }
+  # Desconectar la base de datos
+  if (! $dbh2->disconnect) {
+     warn "Error al desconectarse de la base de datos: $DBI::errstr";
+  }
+  # Desconectar la base de datos
+  if (! $dbh3->disconnect) {
+     warn "Error al desconectarse de la base de datos: $DBI::errstr";
+  }
