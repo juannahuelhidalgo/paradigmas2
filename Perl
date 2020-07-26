@@ -2,8 +2,9 @@
 
 #Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
 #Tambien se conecta a la bbdd (local)
+#he empezado a parsear el archivo del clima diario
 #Queda lograr automatizarlo
-#Falta clasificarlo
+#Falta clasificar 5dias e historial
 
 
 #!C:\Perl64\bin\perl.exe
