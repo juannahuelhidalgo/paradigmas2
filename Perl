@@ -6,6 +6,7 @@
 #Falta clasificarlo
 
 
+#!C:\Perl64\bin\perl.exe
 use strict;
 use warnings;
 use strict;
@@ -13,7 +14,7 @@ use LWP::Simple;
 use open qw( :encoding(latin1) :std ); # Make UTF-8 default encoding
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use DBI;
-
+use feature qw(switch);
 
 #conocemos e imprimimos el dia corriente en cuestion
 #esto servira para crear y eliminar los backup solicitados (con su respectivo nombre)
@@ -46,6 +47,77 @@ foreach my $member ($zip-> members)
 }
 
 
+#generamos nuestra base de datos con sus puertos, usuario, pw y nombre
+ my $dbname3 = 'diario';
+ my $dbhost = '127.0.0.1';
+ my $dbuser = 'root';
+ my $dbpwd = '';
+ #nos conectamos y la preparamos para agregar los datos
+ my $dbh3 = DBI->connect("DBI:mysql:database=$dbname3;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+ my $sth3 = $dbh3->prepare(
+         "INSERT INTO `diario`(`id`, `nombre`, fecha, hora, tiempo, visibilidad, n1, n2, direccion, n3)
+         VALUES (?,?,?,?,?,?,?,?,?,?)"
+         );
+ 
+#se extrae lo que se busca del archivo
+#reemplazo "/" en el fichero ya que es innecesario gracias al ciclo for
+
+
+#abrimos y parseamos el archivo
+open (FILE, 'infodiaria.txt');
+while (<FILE>) {
+
+  chomp;
+  for (my $i=0; $i <= 124; $i++) {
+  my $id = 1;
+  my $namediario;
+  my $fechamal;
+  my $horamal;
+  my $tiempo,
+  my $visibilidad;
+  my $n1;
+  my $n2;
+  my $direccion;
+  my $n3;
+  ($namediario, $fechamal, $horamal, $tiempo, $visibilidad, $n1, $n2, $direccion, $n3) = split(";");
+ 
+ #puede ser sustituido por la linea del else todo el switch pero dejaria de ser parseo 100%
+ @fechas = split(/-/,$fechamal);
+ given($fecha[1]) {
+    when ("enero")            { $fecha[1] = 1;}
+    when ("febrero")          { $fecha[1] = 2; }
+    when ("marzo")          {$fecha[1] = 3; }
+    when ("abril")          { $fecha[1] = 4; }
+    when ("mayo")          {$fecha[1] = 5; }
+    when ("junio")          { $fecha[1] = 6; }
+    when ("julio")          { $fecha[1] = 7; }
+    when ("agosto")          { $fecha[1] = 8;  }
+    when ("septiembre")          { $fecha[1] = 9; }
+    when ("octubre")          { $fecha[1] = 10; }
+    when ("noviembre")          { $fecha[1] = 11; }
+    when ("diciembre")          { $fecha[1] = 12; }
+   default              { $fecha[1] = $mon;  }
+}
+my $fechabien = "$fecha[1]/$fecha[0]/$fecha[2]";
+ 
+ @horas = split(/:/,$horamal);
+my $horabien = "$fecha[0]:$fecha[1]:$fecha[1]"
+
+   #el siguiente comando introduce el valor a la bbdd en el orden de preparado
+   $sth3->execute($id, $namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $n2, $direccion, $n3);
+   
+   $id++;
+}
+}
+
+# Desconectar la base de datos
+  if (! $dbh3->disconnect) {
+     warn "Error al desconectarse de la base de datos: $DBI::errstr";
+  }
+  
+ close (FILE);
+ 
+
 my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
 my $cincodias = '5d' . '.zip';
 getstore( $url5dias, $cincodias );
@@ -60,6 +132,9 @@ foreach my $member ($zip2-> members)
 }
 #se extrae el archivo
 
+      
+ # perl -p -i -e 's/esto-es-lo-que-busco/esto-es-lo-que-pongo/g;' fichero.txt
+      
       
 my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
 my $historial = 'hist' . '.zip';
@@ -79,11 +154,8 @@ foreach my $member ($zip3-> members)
 #generamos nuestra base de datos con sus puertos, usuario, pw y nombre
  my $dbname1 = 'cincodias';
  my $dbname2 = 'historial';
- my $dbname3 = 'diario';
- my $dbhost = '127.0.0.1';
- my $dbuser = 'root';
- my $dbpwd = '';
- 
+
+
 #nos conectamos y la preparamos para agregar los datos
 my $dbh1 = DBI->connect("DBI:mysql:database=$dbname1;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
 my $sth1 = $dbh1->prepare(
@@ -91,7 +163,7 @@ my $sth1 = $dbh1->prepare(
          VALUES (?,?)"
          );
 my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
-my $dbh3 = DBI->connect("DBI:mysql:database=$dbname3;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+
 
 #el siguiente comando introduce el valor a la bbdd en el orden de preparado
 #$sth1->execute( 1, "hola");
@@ -105,7 +177,5 @@ my $dbh3 = DBI->connect("DBI:mysql:database=$dbname3;host=$dbhost", $dbuser, $db
   if (! $dbh2->disconnect) {
      warn "Error al desconectarse de la base de datos: $DBI::errstr";
   }
-  # Desconectar la base de datos
-  if (! $dbh3->disconnect) {
-     warn "Error al desconectarse de la base de datos: $DBI::errstr";
-  }
+
+
