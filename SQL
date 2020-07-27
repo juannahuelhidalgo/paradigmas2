@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS cincodias ( id INT PRIMARY KEY);
 
 CREATE DATABASE IF  NOT EXISTS diario;
 USE diario;
-CREATE TABLE IF NOT EXISTS diario ( id INT PRIMARY KEY, nombre VARCHAR(30), fecha DATE, hora TIME, tiempo varchar(20), visibilidad int, n1 float, n2 float, direccion varchar (15), n3 float);
+CREATE TABLE IF NOT EXISTS diario (nombre VARCHAR(30) PRIMARY KEY, fecha DATE, hora TIME, tiempo varchar(20), visibilidad int, n1 float, n2 float, n3 int, direccion varchar (20), n4 float);
