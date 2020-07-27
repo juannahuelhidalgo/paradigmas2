@@ -1,13 +1,10 @@
 #!C:\Perl64\bin\perl.exe
 
 #Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
-#Tambien se conecta a la bbdd (local)
-#he empezado a parsear el archivo del clima diario
+#Tambien se conecta a la bbdd (local) y coloca el primer dato de clima diario
 #Queda lograr automatizarlo
 #Falta clasificar 5dias e historial
 
-
-#!C:\Perl64\bin\perl.exe
 use strict;
 use warnings;
 use strict;
@@ -15,7 +12,7 @@ use LWP::Simple;
 use open qw( :encoding(latin1) :std ); # Make UTF-8 default encoding
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use DBI;
-use feature qw(switch);
+use Switch;
 
 #conocemos e imprimimos el dia corriente en cuestion
 #esto servira para crear y eliminar los backup solicitados (con su respectivo nombre)
@@ -56,7 +53,7 @@ foreach my $member ($zip-> members)
  #nos conectamos y la preparamos para agregar los datos
  my $dbh3 = DBI->connect("DBI:mysql:database=$dbname3;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
  my $sth3 = $dbh3->prepare(
-         "INSERT INTO `diario`(`id`, `nombre`, fecha, hora, tiempo, visibilidad, n1, n2, direccion, n3)
+         "INSERT INTO `diario`(`nombre`, fecha, hora, tiempo, visibilidad, n1, n2, n3, direccion, n4)
          VALUES (?,?,?,?,?,?,?,?,?,?)"
          );
  
@@ -65,12 +62,10 @@ foreach my $member ($zip-> members)
 
 
 #abrimos y parseamos el archivo
-open (FILE, 'infodiaria.txt');
+open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\infodiaria.txt') || die "Can't open this shit";; 
 while (<FILE>) {
-
   chomp;
   for (my $i=0; $i <= 124; $i++) {
-  my $id = 1;
   my $namediario;
   my $fechamal;
   my $horamal;
@@ -80,43 +75,51 @@ while (<FILE>) {
   my $n2;
   my $direccion;
   my $n3;
-  ($namediario, $fechamal, $horamal, $tiempo, $visibilidad, $n1, $n2, $direccion, $n3) = split(";");
- 
+  my $n4;
+  ($namediario, $fechamal, $horamal, $tiempo, $visibilidad, $n1, $n2, $n3, $direccion, $n4) = split(";");
+  
+  
  #puede ser sustituido por la linea del else todo el switch pero dejaria de ser parseo 100%
- @fechas = split(/-/,$fechamal);
- given($fecha[1]) {
-    when ("enero")            { $fecha[1] = 1;}
-    when ("febrero")          { $fecha[1] = 2; }
-    when ("marzo")          {$fecha[1] = 3; }
-    when ("abril")          { $fecha[1] = 4; }
-    when ("mayo")          {$fecha[1] = 5; }
-    when ("junio")          { $fecha[1] = 6; }
-    when ("julio")          { $fecha[1] = 7; }
-    when ("agosto")          { $fecha[1] = 8;  }
-    when ("septiembre")          { $fecha[1] = 9; }
-    when ("octubre")          { $fecha[1] = 10; }
-    when ("noviembre")          { $fecha[1] = 11; }
-    when ("diciembre")          { $fecha[1] = 12; }
-   default              { $fecha[1] = $mon;  }
+ my @fecha; 
+ @fecha = split(/-/,$fechamal);
+ switch($fecha[1]) {
+    case ("enero")            { $fecha[1] = 1;}
+    case ("febrero")          { $fecha[1] = 2; }
+    case ("marzo")          {$fecha[1] = 3; }
+    case ("abril")          { $fecha[1] = 4; }
+    case ("mayo")          {$fecha[1] = 5; }
+    case ("junio")          { $fecha[1] = 6; }
+    case ("julio")          { $fecha[1] = 7; }
+    case ("agosto")          { $fecha[1] = 8;  }
+    case ("septiembre")          { $fecha[1] = 9; }
+    case ("octubre")          { $fecha[1] = 10; }
+    case ("noviembre")          { $fecha[1] = 11; }
+    case ("diciembre")          { $fecha[1] = 12; }
+    else              { $fecha[1] = $mon;  }
 }
-my $fechabien = "$fecha[1]/$fecha[0]/$fecha[2]";
- 
- @horas = split(/:/,$horamal);
-my $horabien = "$fecha[0]:$fecha[1]:$fecha[1]"
+my $fechabien = "$fecha[2]/$fecha[1]/$fecha[0]";
+
+
+my @horas; 
+@horas = split(/:/,$horamal);
+my $horabien = "$horas[0]:$horas[1]:$horas[1]";
+
 
    #el siguiente comando introduce el valor a la bbdd en el orden de preparado
-   $sth3->execute($id, $namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $n2, $direccion, $n3);
+   $sth3->execute($namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $n2, $n3, $direccion, $n4);
    
-   $id++;
+#no funciona
+#system(qq(sed -i 1d "C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\infodiaria.txt"));
 }
 }
+ close (FILE);
 
 # Desconectar la base de datos
   if (! $dbh3->disconnect) {
      warn "Error al desconectarse de la base de datos: $DBI::errstr";
   }
   
- close (FILE);
+
  
 
 my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
