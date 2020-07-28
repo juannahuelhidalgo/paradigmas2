@@ -5,6 +5,7 @@
 #Queda lograr automatizarlo
 #Falta clasificar 5dias e historial
 
+
 use strict;
 use warnings;
 use strict;
@@ -65,7 +66,8 @@ foreach my $member ($zip-> members)
 open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\infodiaria.txt') || die "Can't open this shit";; 
 while (<FILE>) {
   chomp;
-  for (my $i=0; $i <= 124; $i++) {
+
+  
   my $namediario;
   my $fechamal;
   my $horamal;
@@ -77,8 +79,8 @@ while (<FILE>) {
   my $n3;
   my $n4;
   ($namediario, $fechamal, $horamal, $tiempo, $visibilidad, $n1, $n2, $n3, $direccion, $n4) = split(";");
-  
-  
+   
+
  #puede ser sustituido por la linea del else todo el switch pero dejaria de ser parseo 100%
  my @fecha; 
  @fecha = split(/-/,$fechamal);
@@ -105,14 +107,11 @@ my @horas;
 my $horabien = "$horas[0]:$horas[1]:$horas[1]";
 
 
-   #el siguiente comando introduce el valor a la bbdd en el orden de preparado
-   $sth3->execute($namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $n2, $n3, $direccion, $n4);
-   
-#no funciona
-#system(qq(sed -i 1d "C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\infodiaria.txt"));
-}
+#el siguiente comando introduce el valor a la bbdd en el orden de preparado
+$sth3->execute($namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $n2, $n3, $direccion, $n4);
 }
  close (FILE);
+ 
 
 # Desconectar la base de datos
   if (! $dbh3->disconnect) {
@@ -136,9 +135,6 @@ foreach my $member ($zip2-> members)
 }
 #se extrae el archivo
 
-      
- # perl -p -i -e 's/esto-es-lo-que-busco/esto-es-lo-que-pongo/g;' fichero.txt
-      
       
 my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
 my $historial = 'hist' . '.zip';
@@ -181,5 +177,3 @@ my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $db
   if (! $dbh2->disconnect) {
      warn "Error al desconectarse de la base de datos: $DBI::errstr";
   }
-
-
