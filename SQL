@@ -1,10 +1,11 @@
 CREATE DATABASE IF  NOT EXISTS cincodias;
 USE cincodias;
-CREATE TABLE IF NOT EXISTS cincodias (nombre VARCHAR(30) primary key, fecha DATE, hora TIME, temp float, vientoDir int, velViento int, lluvia float);
+CREATE TABLE IF NOT EXISTS cincodias (nombre VARCHAR(30), fecha DATE, hora TIME, temp float, vientoDir int, velViento int, lluvia float);
+--no puede existir primary key a menos que se separe en muchas tablas por el nombre del lugar.
 
 CREATE DATABASE IF  NOT EXISTS historial;
 USE historial;
-CREATE TABLE IF NOT EXISTS cincodias ( id INT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS historial ( id INT PRIMARY KEY);
 
 CREATE DATABASE IF  NOT EXISTS diario;
 USE diario;
