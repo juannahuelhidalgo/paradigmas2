@@ -1,9 +1,13 @@
 #!C:\Perl64\bin\perl.exe
 
 #Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
-#Tambien se conecta a la bbdd (local) y coloca el primer dato de clima diario
-#Queda lograr automatizarlo
-#Falta clasificar 5dias e historial
+#Tambien se conecta a la bbdd (local) y coloca todos los registros diarios (hay que ver algunos caracteres con acentos)
+#Se elimina todo lo innecesario del archivo 5dias, posteriormente escribiendo en otro lugar y borrando lo anterior (esto podria sobreescribirse igualando la ruta)
+#Se traslada cada palabra del anterior archivo a un array (los indices no corresponden porque no logro quitar los saltos de pagina y algunos espaciados)
+#Todo lo referente a 5dias es por fuerza bruta y usando algunas expresiones regulares, no muy lindo visualmente hablando.
+#Falta clasificar 5dias para la base de datos (sera sencillo una vez que logremos dejar listos los indices)
+#Queda lograr automatizarlo todo (maquina virtual?)
+#El archivo historial continua vacio por error del sitio de descarga 31/07/2020
 
 
 use strict;
@@ -53,13 +57,17 @@ foreach my $member ($zip-> members)
  my $dbpwd = '';
  #nos conectamos y la preparamos para agregar los datos
  my $dbh3 = DBI->connect("DBI:mysql:database=$dbname3;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+ 
  my $sth3 = $dbh3->prepare(
-         "INSERT INTO `diario`(`nombre`, fecha, hora, tiempo, visibilidad, n1, n2, n3, direccion, n4)
+         "INSERT INTO `diario2`(`nombre`, fecha, hora, tiempo, visibilidad, n1, n2, n3, direccion, n4)
          VALUES (?,?,?,?,?,?,?,?,?,?)"
          );
  
-#se extrae lo que se busca del archivo
-#reemplazo "/" en el fichero ya que es innecesario gracias al ciclo for
+
+$dbh3 -> do ("truncate table diario2");
+
+#si dropeamos la tabla en vez de truncarla lo de abajo tiene que estar.
+#$dbh3 -> do("CREATE TABLE diario2 (nombre VARCHAR(30) PRIMARY KEY, fecha DATE, hora TIME, tiempo varchar(30), visibilidad int, n1 float, n2 float, n3 int, direccion varchar (30), n4 float)");
 
 
 #abrimos y parseamos el archivo
@@ -68,6 +76,7 @@ while (<FILE>) {
   chomp;
 
   
+  #declaramos las variables que usaremos a la hora de parsear la informacion
   my $namediario;
   my $fechamal;
   my $horamal;
@@ -102,6 +111,7 @@ while (<FILE>) {
 my $fechabien = "$fecha[2]/$fecha[1]/$fecha[0]";
 
 
+#generamos una hora acorde a la bbdd
 my @horas; 
 @horas = split(/:/,$horamal);
 my $horabien = "$horas[0]:$horas[1]:$horas[1]";
@@ -111,16 +121,10 @@ my $horabien = "$horas[0]:$horas[1]:$horas[1]";
 $sth3->execute($namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $n2, $n3, $direccion, $n4);
 }
  close (FILE);
- 
+#Desconectar la base de datos
+$dbh3->disconnect();
 
-# Desconectar la base de datos
-  if (! $dbh3->disconnect) {
-     warn "Error al desconectarse de la base de datos: $DBI::errstr";
-  }
-  
-
- 
-
+   
 my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
 my $cincodias = '5d' . '.zip';
 getstore( $url5dias, $cincodias );
@@ -135,7 +139,67 @@ foreach my $member ($zip2-> members)
 }
 #se extrae el archivo
 
-      
+#generamos nuestra base de datos, sus puertos, usuario, pw y nombre ya fueron creados
+my $dbname1 = 'cincodias';
+#nos conectamos y la preparamos para agregar los datos
+my $dbh1 = DBI->connect("DBI:mysql:database=$dbname1;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+my $sth1 = $dbh1->prepare(
+         "INSERT INTO `cincodias`(`nombre`, `fecha`, `hora`, `temp`, `vientoDir`, `velViento`, `lluvia`)
+         VALUES (?,?,?,?,?,?,?)"
+         );
+ 
+ #vamos a leer linea a linea el archivo originaal y el nuevo
+ my $linea;
+#abrimos y quitamos de en medio todo lo que no nos sirve del mismo escribiendo un nuevo archivo
+open (OUT, '>C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\cincodias2.txt') || die "Can't open this shit";
+open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\cincodias.txt') || die "Can't open this shit";
+while ($linea= <FILE>) {
+  chomp($linea);
+
+#esto sustituve la barra media, el igual y el asterisco por un espacio vacio.
+$linea =~ s/[|=*(),]//g;
+#esto sustituye barra baja por un espacio.
+$linea =~ s/[_]/ /g;
+
+
+#quitamos distintas cosas molestas (esto puede ser mejorado pero no encontre la forma)
+$linea =~ s/ Producto basado en un modelo de pronóstico numérico del tiempo//g;
+$linea =~ s/ por lo tanto puede diferir del pronostico emitido por el SMN//g;
+ $linea =~ s/      FECHA           TEMPERATURA      VIENTO      PRECIPITACIONmm//g;
+  my $hola = "DIR  KM/H";
+  $linea =~ s/$hola//g;
+  my $hs = "Hs.";
+  $linea =~ s/$hs//g;
+ 
+  print OUT $linea;
+}
+ close (FILE);
+ close (OUT);
+
+#aqui se busca el nombre del archivo viejo si existiera para eliminarlo
+$rootdir = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\cincodias.txt';
+unlink ($rootdir);
+
+#Abrimos el archivo ya procesado para parsear
+open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\cincodias2.txt') || die "Can't open this shit";
+while ($linea= <FILE>) {
+  chomp($linea);
+ #$linea =~ s/\n//g;
+ #llenaremos un array con cada conjunto de caracteres separados por un espacio
+ my @palabras = split(/\s+/, $linea);
+ 
+@palabras = grep { / / } @palabras;
+ 
+print "$palabras[1]"
+#print "$palabras[0]/$palabras[1]/$palabras[2]/$palabras[3]/$palabras[400]";
+
+}
+ close (FILE);
+ 
+#Desconectar la base de datos
+$dbh1->disconnect();
+
+
 my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
 my $historial = 'hist' . '.zip';
 getstore( $urldatosmet, $historial );
@@ -151,29 +215,3 @@ foreach my $member ($zip3-> members)
 #se extrae el archivo
 
 
-#generamos nuestra base de datos con sus puertos, usuario, pw y nombre
- my $dbname1 = 'cincodias';
- my $dbname2 = 'historial';
-
-
-#nos conectamos y la preparamos para agregar los datos
-my $dbh1 = DBI->connect("DBI:mysql:database=$dbname1;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
-my $sth1 = $dbh1->prepare(
-         "INSERT INTO `cincodias`(`id`, `nombre`)
-         VALUES (?,?)"
-         );
-my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
-
-
-#el siguiente comando introduce el valor a la bbdd en el orden de preparado
-#$sth1->execute( 1, "hola");
-
-
-  #Desconectar la base de datos
-  if (! $dbh1->disconnect) {
-     warn "Error al desconectarse de la base de datos: $DBI::errstr";
-  }
-  # Desconectar la base de datos
-  if (! $dbh2->disconnect) {
-     warn "Error al desconectarse de la base de datos: $DBI::errstr";
-  }
