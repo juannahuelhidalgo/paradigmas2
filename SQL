@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS cincodias (nombre VARCHAR(30), fecha DATE, hora TIME,
 
 CREATE DATABASE IF  NOT EXISTS historial;
 USE historial;
-CREATE TABLE IF NOT EXISTS historial ( id INT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS historial (fecha DATE,  hora int,  temp float, hum int, pnm float, dd int, ff int, nombre VARCHAR(30));
+  
 
 CREATE DATABASE IF  NOT EXISTS diario;
 USE diario;
