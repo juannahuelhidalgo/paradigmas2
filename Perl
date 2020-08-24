@@ -4,10 +4,11 @@
 #Tambien se conecta a la bbdd (local) y coloca todos los registros diarios (hay que ver algunos caracteres con acentos)
 #Se elimina todo lo innecesario del archivo 5dias, posteriormente escribiendo en otro lugar y borrando lo anterior (esto podria sobreescribirse igualando la ruta)
 #Se traslada cada palabra del anterior archivo a un array. 
+#Se esta clasificando 5dias tratando de juntar con join los lugares del array donde hay 2 expresiones consecutivas de letras.
+#Luego puede subirse "facilmente" a la base de datos.
 #Todo lo referente a 5dias es por fuerza bruta y usando algunas expresiones regulares, no muy lindo visualmente hablando.
-#Falta clasificar 5dias para la base de datos
 #Queda lograr automatizarlo todo (maquina virtual?)
-#El archivo historial todavia no ha sido evaluado
+#El archivo historial empezo a ser evaluado pero el mismo se dio de baja de nuevo.
 
 
 use strict;
@@ -189,10 +190,39 @@ while ($linea= <FILE>) {
  
  #se elimina el primer espacio en blanco ya que eliminarlo por expresion regular es mas costoso a nivel de proceso.
 shift(@palabras);
+my @nombresa;
 
-#foreach (@palabras) {
- # print "$_\n";
-#}
+ 
+ #si le digo que el lugar siguiente a ese lugar de array es un string le haga un join deberia juntar las cadenas
+ #de nombres separados de los lugares
+ for( my $Arrayindex = 0; $Arrayindex <= ( $#palabras ); $Arrayindex++)
+ {
+  if (($palabras[ $Arrayindex ] =~ /[a-zA-Z]/) && ($palabras[ $Arrayindex + 1] =~ /[a-zA-Z]/)) {
+    join (" ", $palabras[ $Arrayindex ] , $palabras[ $Arrayindex + 1])
+  } #else{
+   #print $palabras[ $Arrayindex ] , ' is at location ' , $Arrayindex , ' in the array' , "\n";
+  #}      
+}
+ 
+ #bucle de comprobacion
+ foreach (@palabras) {
+  print "$_\n";
+}
+
+
+=a
+foreach my $ele (@palabras) 
+{
+ if (($ele =~ /[a-zA-Z]/) && ($ele =~ /[a-zA-Z]/)) {
+ 
+   push @nombresa, $ele;
+ }
+  #print "$ele \n"; 
+  #  print "$ele \n"; 
+foreach (@palabras) {
+  print "$_\n";
+}
+=cut
 
 }
  close (FILE);
@@ -200,7 +230,7 @@ shift(@palabras);
 #Desconectar la base de datos
 $dbh1->disconnect();
 
-
+=a
 my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
 my $historial = 'hist' . '.zip';
 getstore( $urldatosmet, $historial );
@@ -214,4 +244,46 @@ foreach my $member ($zip3-> members)
       "$destinationDirectory/historial.txt");
 }
 #se extrae el archivo
+
+#generamos nuestra base de datos, sus puertos, usuario, pw y nombre ya fueron creados
+my $dbname2 = 'historial';
+#nos conectamos y la preparamos para agregar los datos
+my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+my $sth2 = $dbh2->prepare(
+         "INSERT INTO `historial`(`fecha`, `hora`, `temp`, `hum`, `pnm`, `dd`, `ff`, `nombre`)
+         VALUES (?,?,?,?,?,?,?,?)"
+        #FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE 
+         );
+
+ #vamos a leer linea a linea el archivo original y el nuevo
+ my $linea2;
+#abrimos y quitamos de en medio todo lo que no nos sirve del mismo escribiendo un nuevo archivo
+open (OUT, '>C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial2.txt') || die "Can't open this shit1";
+open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial.txt') || die "Can't open this shit2";
+while ($linea2= <FILE>) {
+  chomp($linea2);
+  
+ 
+#quitamos distintas cosas molestas (esto puede ser mejorado pero no encontre la forma)
+$linea2 =~ s/FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE                                             //g;
+$linea2 =~ s/          //g;
+$linea2 =~ s/[\[\]]//g;
+my $o = "HOA  ºC   %  hPa  gr km/hr    ";
+$linea2 =~ s/$o//g;
+
+ 
+  print $linea2;
+  print OUT $linea2;
+}
+ close (FILE);
+ close (OUT);
+$dbh2->disconnect();
+#aqui se busca el nombre del archivo viejo si existiera para eliminarlo
+#$rootdir = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial.txt';
+#unlink ($rootdir);
+
+#en ppm esta la otra parte
+
+=cut
+
 
