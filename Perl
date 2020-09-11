@@ -3,14 +3,11 @@
 #Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
 #Tambien se conecta a la bbdd (local) y coloca todos los registros diarios (hay que ver algunos caracteres con acentos)
 #Se elimina todo lo innecesario del archivo 5dias, posteriormente escribiendo en otro lugar y borrando lo anterior (esto podria sobreescribirse igualando la ruta)
-#Se traslada cada palabra del anterior archivo a un array. 
 #Se esta clasificando 5dias.
-#Mismo proceso para historial que para 5 dias.
 #Se esta clasificando historial.
 #Luego pueden subirse "facilmente" a la base de datos.
 #Todo lo referente a 5dias es por fuerza bruta y usando algunas expresiones regulares, no muy lindo visualmente hablando.
 #Queda lograr automatizarlo todo (maquina virtual?)
-
 
 
 use strict;
@@ -165,7 +162,6 @@ $linea =~ s/[|=*(),]//g;
 $linea =~ s/[_]/ /g;
 
 
-
 #quitamos distintas cosas molestas (esto puede ser mejorado pero no encontre la forma)
 $linea =~ s/ Producto basado en un modelo de pronóstico numérico del tiempo//g;
 $linea =~ s/ por lo tanto puede diferir del pronostico emitido por el SMN//g;
@@ -174,80 +170,93 @@ $linea =~ s/ por lo tanto puede diferir del pronostico emitido por el SMN//g;
   $linea =~ s/$hola//g;
   my $hs = "Hs.";
   $linea =~ s/$hs//g;
- #$linea =~ s/ //g;
-  print OUT $linea;
+
+  
+    print OUT $linea;
+  
 }
  close (FILE);
  close (OUT);
 
-#aqui se busca el nombre del archivo viejo si existiera para eliminarlo
+
+ #aqui se busca el nombre del archivo viejo si existiera para eliminarlo
 $rootdir = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\cincodias.txt';
-unlink ($rootdir);
+ unlink ($rootdir);
+
+
 
 #Abrimos el archivo ya procesado para parsear
 open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\cincodias2.txt') || die "Can't open this shit";
 while ($linea= <FILE>) {
   chomp($linea);
- #$linea =~ s/\n//g; 
+ 
  #llenaremos un array con cada conjunto de caracteres separados por un espacio
  my @palabras = split(/\s+/, $linea);
- 
- #se elimina el primer espacio en blanco ya que eliminarlo por expresion regular es mas costoso a nivel de proceso.
+
 shift(@palabras);
-my @nombresa;
 
- 
-    for my $i (0 .. $#palabras)
+   for my $i (0 .. $#palabras)
 {
-      if (not ($palabras[ $i ] =~ /[0-9]/)) {
-       $a = $i + 1;
-       $b = $i - 1;
-       my $aero = "AERO";
-       my $de = "DE";
-       if(($palabras[$a] =~ /$aero/)){
-       $palabras[$i] = $palabras[$i] . " " . $palabras[$a];
-       }
-       if(($palabras[$i] =~ /$de/)){
-       $palabras[$b] = $palabras[$b] . " " . $palabras[$i] . " " . $palabras[$a];
-       }
+     $b = $i - 1; #valor anterior
+        #i es el valor actual
+       $a = $i + 1; #valor siguiente
+    my $fechamon;
+  switch($mon) {
+    case ("1")            { $fechamon = "ENE";}
+    case ("2")            { $fechamon = "FEB";}
+    case ("3")          { $fechamon = "MAR"; }
+    case ("4")          {$fechamon = "ABR"; }
+    case ("5")          { $fechamon = "MAY"; }
+    case ("6")          {$fechamon= "JUN"; }
+    case ("7")          { $fechamon = "JUL"; }
+    case ("8")          { $fechamon = "AGO" ; }
+    case ("9")          { $fechamon = "SEP";  }
+    case ("10")          { $fechamon = "OCT"; }
+    case ("11")          { $fechamon = "NOV"; }
+    case ("12")          { $fechamon = "DIC"; }
+}
+    if (($palabras[ $i ] =~ /$fechamon/)){
+    $palabras[$i] = "$mday/$mon/$year";
       }
-      print $palabras[$i], "\n"; #, ' is at location ' , $i , ' in the array' , "\n";
+          
 }
- 
-=a
- #si le digo que el lugar siguiente a ese lugar de array es un string le haga un join deberia juntar las cadenas
- #de nombres separados de los lugares
- for( my $Arrayindex = 0; $Arrayindex <= ( $#palabras ); $Arrayindex++)
- {
-  if (not ($palabras[ $Arrayindex ] =~ /[1-9]/)) {
-
    
-  if (($palabras[ $Arrayindex ] =~ /[a-zA-Z]/) && (($palabras[ $Arrayindex ] =~ /[a-zA-Z]/))) {
-print $palabras[ $Arrayindex ], ' is at location ' , $Arrayindex , ' in the array' , "\n";
-#join (" ", $palabras[ $Arrayindex ] , $palabras[ $Arrayindex + 1);
-  } 
+
+my $indicepas = 0;
+my $indice_ref = \$indicepas;
+my $indiceact = 0;
+my $indicea_ref = \$indiceact;
+
+my $vreg = 0;
+my $vreg_ref = \$vreg;
+
+for my $a(0 .. 2){
+for my $i (0 .. $#palabras){
+ 
+if ($vreg == 1) {
+  if($palabras[$i] =~ /[A-Z]/){
+      $indiceact = $i;
+      $vreg = 0;
+     if ($indicepas+1 == $indiceact) {
+      $palabras[$indicepas] = $palabras[$indicepas] . " " . $palabras[$indiceact];
+       splice(@palabras, $indiceact, 1);
+       }
+  }
 }
  
- =cut
- #bucle de comprobacion
- #foreach (@palabras) {
-  #print "$_\n";
-#}
+if ($vreg == 0) {
+  if($palabras[$i] =~ /[A-Z]/){
+      $indicepas = $i;
+      $vreg = 1;
+    } 
+  }
 
-
-=a
-foreach my $ele (@palabras) 
-{
- if (($ele =~ /[a-zA-Z]/) && ($ele =~ /[a-zA-Z]/)) {
- 
-   push @nombresa, $ele;
  }
-  #print "$ele \n"; 
-  #  print "$ele \n"; 
-foreach (@palabras) {
-  print "$_\n";
 }
-=cut
+
+for my $i (0 .. $#palabras){
+   print  $palabras[$i] . "\n";
+ }
 
 }
  close (FILE);
