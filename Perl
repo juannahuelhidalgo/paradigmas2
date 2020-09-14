@@ -1,7 +1,8 @@
 #!C:\Perl64\bin\perl.exe
 
 #Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
-#Tambien se conecta a la bbdd (local) y coloca todos los registros diarios (hay que ver algunos caracteres con acentos)
+#Tambien se conectan todos a la bbdd (local).
+#El clima diario esta listo (existe un problema de acentos pero debe ser una gilada y no tengo ganas de buscar como subirlo en latin2)
 #Se elimina todo lo innecesario del archivo 5dias, posteriormente escribiendo en otro lugar y borrando lo anterior (esto podria sobreescribirse igualando la ruta)
 #Se esta clasificando 5dias.
 #Se esta clasificando historial.
@@ -123,8 +124,82 @@ $sth3->execute($namediario, $fechabien, $horabien, $tiempo, $visibilidad, $n1, $
  close (FILE);
 #Desconectar la base de datos
 $dbh3->disconnect();
+#.............................................................................
+#.............................................................................
+#.............................................................................
+#.............................................................................
+my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
+my $historial = 'hist' . '.zip';
+getstore( $urldatosmet, $historial );
+#aqui se almacena el archivo
+my $zip3 = Archive::Zip->new($historial);
+foreach my $member ($zip3-> members)
+{
+    next if $member->isDirectory;
+    (my $extractName = $member->fileName) =~ s{.*/}{};
+    $member->extractToFileNamed(
+      "$destinationDirectory/historial.txt");
+}
+#se extrae el archivo
 
-   
+#generamos nuestra base de datos, sus puertos, usuario, pw y nombre ya fueron creados
+my $dbname2 = 'historial';
+#nos conectamos y la preparamos para agregar los datos
+my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
+my $sth2 = $dbh2->prepare(
+         "INSERT INTO `historial`(`fecha`, `hora`, `temp`, `hum`, `pnm`, `dd`, `ff`, `nombre`)
+         VALUES (?,?,?,?,?,?,?,?)"
+        #FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE 
+         );
+
+ #vamos a leer linea a linea el archivo original y el nuevo
+ my $linea2;
+#abrimos y quitamos de en medio todo lo que no nos sirve del mismo escribiendo un nuevo archivo
+open (OUT, '>C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial2.txt') || die "Can't open this shit1";
+open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial.txt') || die "Can't open this shit2";
+while ($linea2= <FILE>) {
+  chomp($linea2);
+  
+ 
+#quitamos distintas cosas molestas (esto puede ser mejorado pero no encontre la forma)
+$linea2 =~ s/FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE                                             //g;
+$linea2 =~ s/          //g;
+$linea2 =~ s/[\[\]]//g;
+my $o = "HOA  ºC   %  hPa  gr km/hr    ";
+$linea2 =~ s/$o//g;
+
+ 
+  #print $linea2;
+  print OUT $linea2;
+}
+ close (FILE);
+ close (OUT);
+ 
+ #Abrimos el archivo ya procesado para parsear
+open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial2.txt') || die "Can't open this shit";
+while ($linea2 = <FILE>) {
+  chomp($linea2);
+ #$linea =~ s/\n//g; 
+ #llenaremos un array con cada conjunto de caracteres separados por un espacio
+ my @palabras2 = split(/\s+/, $linea2);
+ 
+ #se elimina el primer espacio en blanco ya que eliminarlo por expresion regular es mas costoso a nivel de proceso.
+shift(@palabras2);
+
+
+    for my $i (0 .. $#palabras2)
+  {
+    
+         print $palabras2[$i], ' is at location ' , $i , ' in the array' , "\n";
+      
+ }
+}
+ close (FILE);
+$dbh2->disconnect();
+#.............................................................................
+#.............................................................................
+#.............................................................................
+#.............................................................................
 my $url5dias = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=pron5d ';
 my $cincodias = '5d' . '.zip';
 getstore( $url5dias, $cincodias );
@@ -234,20 +309,20 @@ for my $a(0 .. 2){
 for my $i (0 .. $#palabras){
  
 if ($vreg == 1) {
-  if($palabras[$i] =~ /[A-Z]/){
+  if(defined($palabras[$i]) &&  ($palabras[$i] =~ /[A-Z]/)){
       $indiceact = $i;
       $vreg = 0;
      if ($indicepas+1 == $indiceact) {
       $palabras[$indicepas] = $palabras[$indicepas] . " " . $palabras[$indiceact];
        splice(@palabras, $indiceact, 1);
        }
+   }
   }
-}
- 
+  
 if ($vreg == 0) {
-  if($palabras[$i] =~ /[A-Z]/){
+  if(defined($palabras[$i]) && ($palabras[$i] =~ /[A-Z]/)){
       $indicepas = $i;
-      $vreg = 1;
+        $vreg = 1;     
     } 
   }
 
@@ -255,88 +330,11 @@ if ($vreg == 0) {
 }
 
 for my $i (0 .. $#palabras){
-   print  $palabras[$i] . "\n";
- }
+ print $palabras[$i] . "\n";
+}
 
 }
  close (FILE);
  
 #Desconectar la base de datos
 $dbh1->disconnect();
-
-#=a
-my $urldatosmet = 'https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=datohorario';
-my $historial = 'hist' . '.zip';
-getstore( $urldatosmet, $historial );
-#aqui se almacena el archivo
-my $zip3 = Archive::Zip->new($historial);
-foreach my $member ($zip3-> members)
-{
-    next if $member->isDirectory;
-    (my $extractName = $member->fileName) =~ s{.*/}{};
-    $member->extractToFileNamed(
-      "$destinationDirectory/historial.txt");
-}
-#se extrae el archivo
-
-#generamos nuestra base de datos, sus puertos, usuario, pw y nombre ya fueron creados
-my $dbname2 = 'historial';
-#nos conectamos y la preparamos para agregar los datos
-my $dbh2 = DBI->connect("DBI:mysql:database=$dbname2;host=$dbhost", $dbuser, $dbpwd, {RaiseError => 1});
-my $sth2 = $dbh2->prepare(
-         "INSERT INTO `historial`(`fecha`, `hora`, `temp`, `hum`, `pnm`, `dd`, `ff`, `nombre`)
-         VALUES (?,?,?,?,?,?,?,?)"
-        #FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE 
-         );
-
- #vamos a leer linea a linea el archivo original y el nuevo
- my $linea2;
-#abrimos y quitamos de en medio todo lo que no nos sirve del mismo escribiendo un nuevo archivo
-open (OUT, '>C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial2.txt') || die "Can't open this shit1";
-open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial.txt') || die "Can't open this shit2";
-while ($linea2= <FILE>) {
-  chomp($linea2);
-  
- 
-#quitamos distintas cosas molestas (esto puede ser mejorado pero no encontre la forma)
-$linea2 =~ s/FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE                                             //g;
-$linea2 =~ s/          //g;
-$linea2 =~ s/[\[\]]//g;
-my $o = "HOA  ºC   %  hPa  gr km/hr    ";
-$linea2 =~ s/$o//g;
-
- 
-  #print $linea2;
-  print OUT $linea2;
-}
- close (FILE);
- close (OUT);
- 
- #Abrimos el archivo ya procesado para parsear
-open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial2.txt') || die "Can't open this shit";
-while ($linea= <FILE>) {
-  chomp($linea);
- #$linea =~ s/\n//g; 
- #llenaremos un array con cada conjunto de caracteres separados por un espacio
- my @palabras2 = split(/\s+/, $linea);
- 
- #se elimina el primer espacio en blanco ya que eliminarlo por expresion regular es mas costoso a nivel de proceso.
-#shift(@palabras2);
-
-
-   # for my $i (0 .. $#palabras2)
-#{
- #     if (not ($palabras2[ $i ] =~ /[0-9]/)) {
-  #       print $palabras2[$i], ' is at location ' , $i , ' in the array' , "\n";
-   #   }
-#}
-}
- close (FILE);
-$dbh2->disconnect();
-#aqui se busca el nombre del archivo viejo si existiera para eliminarlo
-#$rootdir = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial.txt';
-#unlink ($rootdir);
-
-#en ppm esta la otra parte
-
-#=cut
