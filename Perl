@@ -1,15 +1,11 @@
 #!C:\Perl64\bin\perl.exe
 
-#Por ahora descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
-#Tambien se conectan todos a la bbdd (local).
+#Descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
+#Sse conectan todos a la bbdd (local).
 #El clima diario esta listo (existe un problema de acentos pero debe ser una gilada y no tengo ganas de buscar como subirlo en latin2)
-#Se elimina todo lo innecesario del archivo 5dias, posteriormente escribiendo en otro lugar y borrando lo anterior (esto podria sobreescribirse igualando la ruta)
-#Se esta clasificando 5dias.
-#Se esta clasificando historial.
-#Luego pueden subirse "facilmente" a la base de datos.
-#Todo lo referente a 5dias es por fuerza bruta y usando algunas expresiones regulares, no muy lindo visualmente hablando.
+#historial esta listo
+#5 dias esta listo
 #Queda lograr automatizarlo todo (maquina virtual?)
-
 
 use strict;
 use warnings;
@@ -151,6 +147,7 @@ my $sth2 = $dbh2->prepare(
          VALUES (?,?,?,?,?,?,?,?)"
         #FECHA     HORA  TEMP   HUM   PNM    DD    FF     NOMBRE 
          );
+$dbh2 -> do ("truncate table historial");
 
  #vamos a leer linea a linea el archivo original y el nuevo
  my $linea2;
@@ -169,7 +166,6 @@ my $o = "HOA  ºC   %  hPa  gr km/hr    ";
 $linea2 =~ s/$o//g;
 
  
-  #print $linea2;
   print OUT $linea2;
 }
  close (FILE);
@@ -179,20 +175,81 @@ $linea2 =~ s/$o//g;
 open (FILE, 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial2.txt') || die "Can't open this shit";
 while ($linea2 = <FILE>) {
   chomp($linea2);
- #$linea =~ s/\n//g; 
+
  #llenaremos un array con cada conjunto de caracteres separados por un espacio
  my @palabras2 = split(/\s+/, $linea2);
  
- #se elimina el primer espacio en blanco ya que eliminarlo por expresion regular es mas costoso a nivel de proceso.
+ #se realiza un arreglo rapido del array cuyo coste es menor que realizarlo con una expresion regular.
+for my $n (0 .. 5){
 shift(@palabras2);
+}
 
 
-    for my $i (0 .. $#palabras2)
-  {
-    
-         print $palabras2[$i], ' is at location ' , $i , ' in the array' , "\n";
-      
+my $indicepas1 = 0;
+my $indice_ref = \$indicepas1;
+my $indiceact1 = 0;
+my $indicea_ref = \$indiceact1;
+
+my $vreg1 = 0;
+my $vreg_ref = \$vreg1;
+
+for my $a(0 .. 2){
+for my $i (0 .. $#palabras2){
+ 
+if ($vreg1 == 1) {
+  if(defined($palabras2[$i]) &&  ($palabras2[$i] =~ /[A-Z]/)){
+      $indiceact1 = $i;
+      $vreg1 = 0;
+     if ($indicepas1+1 == $indiceact1) {
+      $palabras2[$indicepas1] = $palabras2[$indicepas1] . " " . $palabras2[$indiceact1];
+       splice(@palabras2, $indiceact1, 1);
+       }
+   }
+  }
+  
+if ($vreg1 == 0) {
+  if(defined($palabras2[$i]) && ($palabras2[$i] =~ /[A-Z]/)){
+      $indicepas1 = $i;
+        $vreg1 = 1;     
+    } 
+  }
+
+  }
  }
+
+my $indic = 1;
+my $indic_ref = \$indic;
+#"INSERT INTO `historial`(`fecha`, `hora`, `temp`, `hum`, `pnm`, `dd`, `ff`, `nombre`)"
+my $fechareal = " ";
+my $fechareal_ref = \$fechareal;
+my $hora = " ";
+my $hora_ref = \$hora;
+my $temperatura = " ";
+my $temperatura_ref = \$temperatura;
+my $hum = " ";
+my $hum_ref = \$hum;
+my $pnm = " ";
+my $pnm_ref = \$pnm;
+my $dd = " ";
+my $dd_ref = \$dd;
+my $ff = " ";
+my $ff_ref = \$dd;
+my $name = " ";
+my $name_ref = \$name;
+
+my $yest = $mday - 1; 
+for my $i (0 .. $#palabras2){
+   switch($indic) {
+    case ("1")            { $fechareal= "$year/$mon/$yest"; print "aca1" . "\n"; $indic = 2}
+    case ("2")            { $hora = $palabras2[$i] . ":00:" . "00"; print $palabras2[$i] . "\n";$indic = 3;}
+    case ("3")            { $temperatura = $palabras2[$i];print  $palabras2[$i] . "\n";$indic = 4;}
+    case ("4")            { $hum = $palabras2[$i];print $palabras2[$i] . "\n"; $indic = 5;}
+    case ("5")            { $pnm = $palabras2[$i];print $palabras2[$i] . "\n"; $indic = 6;}
+    case ("6")            { $dd = $palabras2[$i];print $palabras2[$i] . "\n"; $indic = 7;}
+    case ("7")            { $ff = $palabras2[$i];print $palabras2[$i] . "\n"; $indic = 8;}
+    case ("8")            { $name = $palabras2[$i];print $palabras2[$i] . "\n"; $indic = 1; $sth2->execute($fechareal, $hora, $temperatura, $hum, $pnm, $dd, $ff, $name);}
+    }
+ }  
 }
  close (FILE);
 $dbh2->disconnect();
@@ -222,6 +279,8 @@ my $sth1 = $dbh1->prepare(
          "INSERT INTO `cincodias`(`nombre`, `fecha`, `hora`, `temp`, `vientoDir`, `velViento`, `lluvia`)
          VALUES (?,?,?,?,?,?,?)"
          );
+
+ $dbh1 -> do ("truncate table cincodias");
  
  #vamos a leer linea a linea el archivo original y el nuevo
  my $linea;
@@ -291,7 +350,7 @@ shift(@palabras);
     case ("12")          { $fechamon = "DIC"; }
 }
     if (($palabras[ $i ] =~ /$fechamon/)){
-    $palabras[$i] = "$mday/$mon/$year";
+    $palabras[$i] = "$year/$mon/$mday";
       }
           
 }
@@ -329,12 +388,51 @@ if ($vreg == 0) {
  }
 }
 
+my $indicador = 1;
+my $indicador_ref = \$indicador;
+#"INSERT INTO `cincodias`(`nombre`, `fecha`, `hora`, `temp`, `vientoDir`, `velViento`, `lluvia`)"
+my $namecinco = " ";
+my $namecinco_ref = \$namecinco;
+my $fechamal = " ";
+my $fechamal_ref = \$fechamal;
+my $horamal = " ";
+my $horamal_ref = \$horamal;
+my $temp = " ";
+my $temp_ref = \$temp;
+my $direccion = " ";
+my $direccion_ref = \$direccion;
+my $viento = " ";
+my $viento_ref = \$viento;
+my $lluvia = " ";
+my $lluvia_ref = \$lluvia;
+
+
 for my $i (0 .. $#palabras){
- print $palabras[$i] . "\n";
-}
+# declaramos las variables que usaremos a la hora de parsear la informacion
+
+
+   switch($indicador) {
+    case ("1")            { if ($palabras[$i] =~ /[A-Z]/){
+                               $namecinco = $palabras[$i];
+                               $indicador = 7;}
+                           else{
+                                              $fechamal = $palabras[$i]; $indicador = 2;}
+                           }
+    case ("2")            { $horamal = $palabras[$i] . ":00:" . "00"; $indicador = 3;}
+    case ("3")            { $temp = $palabras[$i]; $indicador = 4;}
+    case ("4")            { $direccion = $palabras[$i]; $indicador = 5;}
+    case ("5")            { $viento = $palabras[$i]; $indicador = 6;}
+    case ("6")            { $lluvia = $palabras[$i]; $indicador = 7; $sth1->execute($namecinco, $fechamal, $horamal, $temp, $direccion, $viento, $lluvia);}
+    case ("7")            { $indicador = 2; $fechamal = $palabras[$i];}
+    }
+   
+ }
 
 }
  close (FILE);
  
 #Desconectar la base de datos
 $dbh1->disconnect();
+#aqui se busca el nombre del archivo viejo si existiera para eliminarlo
+$rootdir = 'C:\Users\Juan Nahuel Hidalgo\Desktop\Gral\paradigmas\2dotp\txt\historial.txt';
+unlink ($rootdir);
