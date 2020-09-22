@@ -1,8 +1,7 @@
 #!C:\Perl64\bin\perl.exe
 
 #Descarga los archivos del servidor, los descomprime (sobreescribiendo lo que saca).
-#Sse conectan todos a la bbdd (local).
-#El clima diario esta listo (existe un problema de acentos pero debe ser una gilada y no tengo ganas de buscar como subirlo en latin2)
+#Se conectan todos a la bbdd (local).
 #historial esta listo
 #5 dias esta listo
 #Queda lograr automatizarlo todo (maquina virtual?)
@@ -11,7 +10,7 @@ use strict;
 use warnings;
 use strict;
 use LWP::Simple;
-use open qw( :encoding(latin1) :std ); # Make UTF-8 default encoding
+use utf8;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use DBI;
 use Switch;
